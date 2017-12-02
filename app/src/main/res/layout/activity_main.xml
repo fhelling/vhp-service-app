@@ -18,12 +18,27 @@
         android:layout_height="wrap_content" />
 
     <TextView
-        android:id="@+id/textinterface"
+        android:id="@+id/textinfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <EditText
+        android:id="@+id/editcommand"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="text|textPersonName"
+        android:text="^json device" />
+
+    <Button
+        android:id="@+id/buttonsend"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send" />
+
     <TextView
-        android:id="@+id/textconnection"
+        android:id="@+id/textresponse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
 </LinearLayout>

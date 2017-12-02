@@ -5,34 +5,37 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView textDeviceName;
-    TextView textStatus;
-    TextView textInterface;
-    TextView textConnection;
-
     private static final int targetVendorID = 1155;
     private static final int targetProductID = 22336;
+
+    TextView textDeviceName;
+    TextView textStatus;
+    TextView textInfo;
+    TextView textResponse;
+
+    EditText editCommand;
+
+    Button buttonSend;
+
     UsbDevice device = null;
-    UsbInterface usbInterface = null;
-    UsbEndpoint endpointOut = null;
-    UsbEndpoint endpointIn = null;
+    UsbDriver driver = null;
+    UsbPort port = null;
     UsbDeviceConnection connection = null;
+
 
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     PendingIntent mPermissionIntent;
@@ -44,8 +47,14 @@ public class MainActivity extends AppCompatActivity {
 
         textDeviceName = findViewById(R.id.textdevicename);
         textStatus = findViewById(R.id.textstatus);
-        textInterface = findViewById(R.id.textinterface);
-        textConnection = findViewById(R.id.textconnection);
+        textInfo = findViewById(R.id.textinfo);
+        textResponse = findViewById(R.id.textresponse);
+
+        editCommand = findViewById(R.id.editcommand);
+
+        buttonSend = findViewById(R.id.buttonsend);
+        buttonSend.setOnClickListener(buttonSendOnClickListener);
+        buttonSend.setEnabled(false);
 
         //register the broadcast receiver
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -56,129 +65,36 @@ public class MainActivity extends AppCompatActivity {
         getDevice();
     }
 
+    View.OnClickListener buttonSendOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if (device == null) {
+                textResponse.setText("No device connected");
+                return;
+            }
+            String cmd = editCommand.getText().toString();
+            if (cmd.equals("")) return;
+            port.write(cmd + "\r\n");
+            textResponse.setText(port.read());
+        }
+    };
+
     @Override
     protected void onDestroy() {
-        device = null;
-        usbInterface = null;
-        endpointIn = null;
-        endpointOut = null;
-        connection = null;
+        clearAll();
         super.onDestroy();
     }
 
-    private void showRawDescriptors(){
-        final int STD_USB_REQUEST_GET_DESCRIPTOR = 0x06;
-        final int LIBUSB_DT_STRING = 0x03;
-
-        byte[] buffer = new byte[255];
-        int indexManufacturer = 14;
-        int indexProduct = 15;
-        String stringManufacturer = "";
-        String stringProduct = "";
-
-        byte[] rawDescriptors = connection.getRawDescriptors();
-
-        int lengthManufacturer = connection.controlTransfer(
-                UsbConstants.USB_DIR_IN|UsbConstants.USB_TYPE_STANDARD,   //requestType
-                STD_USB_REQUEST_GET_DESCRIPTOR,         //request ID for this transaction
-                (LIBUSB_DT_STRING << 8) | rawDescriptors[indexManufacturer], //value
-                0,   //index
-                buffer,  //buffer
-                0xFF,  //length
-                0);   //timeout
-        try {
-            stringManufacturer = new String(buffer, 2, lengthManufacturer-2, "UTF-16LE");
-        } catch (UnsupportedEncodingException e) {
-            textConnection.setText(e.toString());
-        }
-
-        int lengthProduct = connection.controlTransfer(
-                UsbConstants.USB_DIR_IN|UsbConstants.USB_TYPE_STANDARD,
-                STD_USB_REQUEST_GET_DESCRIPTOR,
-                (LIBUSB_DT_STRING << 8) | rawDescriptors[indexProduct],
-                0,
-                buffer,
-                0xFF,
-                0);
-        try {
-            stringProduct = new String(buffer, 2, lengthProduct-2, "UTF-16LE");
-        } catch (UnsupportedEncodingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        textConnection.setText("Manufacturer: " + stringManufacturer + "\n" +
-                "Product: " + stringProduct);
-    }
-
-    private void setupConnection() {
-        final int SET_LINE_CODING = 0x20;
-        final int SET_CONTROL_LINE_STATE = 0x22;
-        final int USB_RT_ACM = UsbConstants.USB_TYPE_CLASS | 0x01;
-        final int BAUDRATE = 38400;
-        final int STOPBITS = 0;
-        final int PARITY = 0;
-        final int DATABITS = 8;
-
-        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        if (manager.hasPermission(device)) {
-            connection = manager.openDevice(device);
-            if (connection != null) {
-                connection.claimInterface(usbInterface, true);
-                connection.controlTransfer(0x21, SET_CONTROL_LINE_STATE, 0, 0, null, 0, 0);
-                byte[] msg = {
-                        (byte) ( BAUDRATE & 0xff),
-                        (byte) ((BAUDRATE >> 8 ) & 0xff),
-                        (byte) ((BAUDRATE >> 16) & 0xff),
-                        (byte) ((BAUDRATE >> 24) & 0xff),
-                        (byte) STOPBITS,
-                        (byte) PARITY,
-                        (byte) DATABITS
-                };
-                connection.controlTransfer(0x21, SET_LINE_CODING, 0, 0, msg, msg.length, 5000);
-                showRawDescriptors();
-            }
-        }
-        else {
-            manager.requestPermission(device, mPermissionIntent);
-
-        }
-    }
-
-    private void getInterface() {
-        for (int i = 0; i < device.getInterfaceCount(); i++) {
-            UsbInterface usbIf = device.getInterface(i);
-
-            UsbEndpoint tOut = null;
-            UsbEndpoint tIn = null;
-
-            for (int j = 0; j < usbIf.getEndpointCount(); j++) {
-                if (usbIf.getEndpoint(j).getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-                    if(usbIf.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_OUT){
-                        tOut = usbIf.getEndpoint(j);
-                    }else if(usbIf.getEndpoint(j).getDirection() == UsbConstants.USB_DIR_IN){
-                        tIn = usbIf.getEndpoint(j);
-                    }
-                }
-            }
-
-            if (tOut != null && tIn != null) {
-                usbInterface = usbIf;
-                endpointOut = tOut;
-                endpointIn = tIn;
-                break;
-            }
-        }
-
-        if(usbInterface==null){
-            textInterface.setText("No suitable interface found!");
-        }else{
-            textInterface.setText(
-                            "UsbInterface found\n" +
-                            "Endpoint OUT: " + endpointOut.toString() + "\n" +
-                            "Endpoint IN: " + endpointIn.toString());
-            setupConnection();
-        }
+    private void clearAll() {
+        port.close();
+        device = null;
+        driver = null;
+        port = null;
+        connection = null;
+        textStatus.setText("Device detached");
+        textDeviceName.setText("");
+        textInfo.setText("");
+        buttonSend.setEnabled(false);
     }
 
     private void getDevice() {
@@ -204,7 +120,27 @@ public class MainActivity extends AppCompatActivity {
                     "VendorID: " + device.getVendorId() + "\n" +
                     "ProductID: " + device.getProductId();
             textDeviceName.setText(s);
-            getInterface();
+            setupConnection();
+        }
+    }
+
+    private void setupConnection() {
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        if (manager.hasPermission(device)) {
+
+            driver = new UsbDriver(device);
+            connection = manager.openDevice(device);
+
+            if (connection != null) {
+                port = driver.getPorts().get(0);
+                port.open(connection);
+                port.setParameters(38400, UsbPort.DATABITS_8, UsbPort.STOPBITS_1, UsbPort.PARITY_NONE);
+                textInfo.setText(port.getManufacturer() + "\n" + port.getProduct());
+                buttonSend.setEnabled(true);
+            }
+        }
+        else {
+            manager.requestPermission(device, mPermissionIntent);
         }
     }
 
@@ -237,13 +173,10 @@ public class MainActivity extends AppCompatActivity {
                 getDevice();
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                textStatus.setText("Device detached");
-                textDeviceName.setText("");
-                textInterface.setText("");
-                textConnection.setText("");
+
                 if (device != null) {
                     if (device == MainActivity.this.device) {
-                        MainActivity.this.device = null;
+                        clearAll();
                     }
                 }
             }
