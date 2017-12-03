@@ -102,50 +102,44 @@ public class UsbDriver {
         }
 
         @Override
-        public String read() {
+        public int read(byte[] dest) {
             final int numBytesRead;
-            String result;
             synchronized (mReadBufferLock) {
-                numBytesRead = mConnection.bulkTransfer(mReadEndpoint, mReadBuffer, DEFAULT_READ_BUFFER_SIZE, TIMEOUT);
+                int readAmt = Math.min(dest.length, mReadBuffer.length);
+                numBytesRead = mConnection.bulkTransfer(mReadEndpoint, mReadBuffer, readAmt, TIMEOUT);
                 if (numBytesRead < 0) {
-                    return "Time out";
+                    return -1;
                 }
+                System.arraycopy(mReadBuffer, 0, dest, 0, numBytesRead);
             }
-            try {
-                result = new String(mReadBuffer, "UTF-16LE");
-            } catch (UnsupportedEncodingException e) {
-                result = e.toString();
-            }
-            return result;
+            return numBytesRead;
         }
 
         @Override
-        public int write(String src) {
-            byte[] bytes = src.getBytes();
+        public int write(byte[] src) {
             int offset = 0;
 
-            while (offset < bytes.length) {
+            while (offset < src.length) {
                 final int writeLength;
                 final int amtWritten;
 
                 synchronized (mWriteBufferLock) {
                     final byte[] writeBuffer;
 
-                    writeLength = Math.min(bytes.length - offset, mWriteBuffer.length);
+                    writeLength = Math.min(src.length - offset, mWriteBuffer.length);
                     if (offset == 0) {
-                        writeBuffer = bytes;
+                        writeBuffer = src;
                     } else {
                         // bulkTransfer does not support offsets, make a copy.
-                        System.arraycopy(bytes, offset, mWriteBuffer, 0, writeLength);
+                        System.arraycopy(src, offset, mWriteBuffer, 0, writeLength);
                         writeBuffer = mWriteBuffer;
                     }
 
                     amtWritten = mConnection.bulkTransfer(mWriteEndpoint, writeBuffer, writeLength, TIMEOUT);
                 }
                 if (amtWritten <= 0) {
-                    return amtWritten;
+                    return -1;
                 }
-
                 offset += amtWritten;
             }
             return offset;

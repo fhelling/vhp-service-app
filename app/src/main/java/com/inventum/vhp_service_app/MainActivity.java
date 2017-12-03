@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,11 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button buttonSend;
 
-    UsbDevice device = null;
-    UsbDriver driver = null;
-    UsbPort port = null;
-    UsbDeviceConnection connection = null;
-
+    UsbCommunication comm = null;
 
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     PendingIntent mPermissionIntent;
@@ -45,8 +40,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textDeviceName = findViewById(R.id.textdevicename);
         textStatus = findViewById(R.id.textstatus);
+        textDeviceName = findViewById(R.id.textdevicename);
         textInfo = findViewById(R.id.textinfo);
         textResponse = findViewById(R.id.textresponse);
 
@@ -54,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
         buttonSend = findViewById(R.id.buttonsend);
         buttonSend.setOnClickListener(buttonSendOnClickListener);
-        buttonSend.setEnabled(false);
+        //buttonSend.setEnabled(false);
 
         //register the broadcast receiver
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -62,20 +57,20 @@ public class MainActivity extends AppCompatActivity {
         registerReceiver(mUsbDeviceReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED));
         registerReceiver(mUsbDeviceReceiver, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
 
+        textStatus.setText("No device connected");
         getDevice();
     }
 
     View.OnClickListener buttonSendOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if (device == null) {
+            if (comm == null) {
                 textResponse.setText("No device connected");
                 return;
             }
             String cmd = editCommand.getText().toString();
             if (cmd.equals("")) return;
-            port.write(cmd + "\r\n");
-            textResponse.setText(port.read());
+            textResponse.setText(comm.sendReceive(cmd));
         }
     };
 
@@ -86,62 +81,56 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void clearAll() {
-        port.close();
-        device = null;
-        driver = null;
-        port = null;
-        connection = null;
-        textStatus.setText("Device detached");
+        if (comm != null) {
+            comm.stop();
+            comm = null;
+        }
         textDeviceName.setText("");
         textInfo.setText("");
         buttonSend.setEnabled(false);
     }
 
     private void getDevice() {
-        if (device == null) {
-            UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
+        if (comm == null) {
+            UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
             HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
 
             for (UsbDevice device : deviceList.values()) {
-                if (device.getVendorId() == targetVendorID && device.getProductId() == targetProductID) {
-                    this.device = device;
+                if (checkDevice(device) && checkPermission(device)) {
+                    comm = new UsbCommunication(this, device);
+                    setDeviceInfo();
+                    break;
                 }
             }
         }
-
-        if (device == null) {
-            textStatus.setText("Device not found");
-            textDeviceName.setText("");
-        }
-        else {
-            textStatus.setText("Device found");
-            String s = "DeviceID: " + device.getDeviceId() + "\n" +
-                    "DeviceName: " + device.getDeviceName() + "\n" +
-                    "VendorID: " + device.getVendorId() + "\n" +
-                    "ProductID: " + device.getProductId();
-            textDeviceName.setText(s);
-            setupConnection();
-        }
     }
 
-    private void setupConnection() {
+    private void setDeviceInfo() {
+        if (comm == null) return;
+
+        textStatus.setText("Device found");
+        String s = "DeviceID: " + comm.getDevice().getDeviceId() + "\n" +
+                "DeviceName: " + comm.getDevice().getDeviceName() + "\n" +
+                "VendorID: " + comm.getDevice().getVendorId() + "\n" +
+                "ProductID: " + comm.getDevice().getProductId();
+        textDeviceName.setText(s);
+        textInfo.setText(comm.getPort().getManufacturer() + "\n" + comm.getPort().getProduct());
+        buttonSend.setEnabled(true);
+    }
+
+    private boolean checkDevice(UsbDevice device) {
+        return comm == null &&
+                device.getVendorId() == targetVendorID &&
+                device.getProductId() == targetProductID;
+    }
+
+    private boolean checkPermission(UsbDevice device) {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         if (manager.hasPermission(device)) {
-
-            driver = new UsbDriver(device);
-            connection = manager.openDevice(device);
-
-            if (connection != null) {
-                port = driver.getPorts().get(0);
-                port.open(connection);
-                port.setParameters(38400, UsbPort.DATABITS_8, UsbPort.STOPBITS_1, UsbPort.PARITY_NONE);
-                textInfo.setText(port.getManufacturer() + "\n" + port.getProduct());
-                buttonSend.setEnabled(true);
-            }
+            return true;
         }
-        else {
-            manager.requestPermission(device, mPermissionIntent);
-        }
+        manager.requestPermission(device, mPermissionIntent);
+        return false;
     }
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -152,12 +141,14 @@ public class MainActivity extends AppCompatActivity {
                 synchronized (this) {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        if (device != null) {
-                            getDevice();
+                        if (comm == null) {
+                            comm = new UsbCommunication(MainActivity.this, device);
+                            setDeviceInfo();
                         }
                     }
                     else {
                         textStatus.setText("Permission denied for device " + device);
+                        clearAll();
                     }
                 }
             }
@@ -168,16 +159,20 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
+
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
-                device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                getDevice();
+                UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                // Correct device and permission granted?
+                if (checkDevice(device) && checkPermission(device)) {
+                    comm = new UsbCommunication(MainActivity.this, device);
+                    setDeviceInfo();
+                }
+
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-
-                if (device != null) {
-                    if (device == MainActivity.this.device) {
-                        clearAll();
-                    }
+                if (comm != null && device == comm.getDevice()) {
+                    textStatus.setText("Device detached");
+                    clearAll();
                 }
             }
         }

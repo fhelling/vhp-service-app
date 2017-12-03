@@ -59,9 +59,9 @@ public interface UsbPort {
 
     public void setParameters(int baudRate, int dataBits, int stopBits, int parity);
 
-    public String read();
+    public int read(byte[] dest);
 
-    public int write(String src);
+    public int write(byte[] src);
 
     public String getManufacturer();
 
