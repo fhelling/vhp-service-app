@@ -10,6 +10,7 @@ import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
         buttonSend = findViewById(R.id.buttonsend);
         buttonSend.setOnClickListener(buttonSendOnClickListener);
-        //buttonSend.setEnabled(false);
+        buttonSend.setEnabled(false);
 
         //register the broadcast receiver
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -61,16 +62,27 @@ public class MainActivity extends AppCompatActivity {
         getDevice();
     }
 
-    View.OnClickListener buttonSendOnClickListener = new View.OnClickListener() {
+    OnClickListener buttonSendOnClickListener = new OnClickListener() {
         @Override
         public void onClick(View view) {
             if (comm == null) {
                 textResponse.setText("No device connected");
                 return;
             }
-            String cmd = editCommand.getText().toString();
+            final String cmd = editCommand.getText().toString();
             if (cmd.equals("")) return;
-            textResponse.setText(comm.sendReceive(cmd));
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String resp = comm.sendReceive(cmd);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textResponse.setText(resp);
+                        }
+                    });
+                }
+            });
         }
     };
 
@@ -170,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                if (comm != null && device == comm.getDevice()) {
+                if (comm != null && device.equals(comm.getDevice())) {
                     textStatus.setText("Device detached");
                     clearAll();
                 }

@@ -44,7 +44,7 @@ public class UsbCommunication {
         port = null;
     }
 
-    public boolean send(String str) {
+    public synchronized boolean send(String str) {
         if (port == null) {
             return false;
         }
@@ -53,7 +53,7 @@ public class UsbCommunication {
         return port.write(writeBytes) == writeBytes.length;
     }
 
-    public String receive() {
+    public synchronized String receive() {
         byte[] readBytes = new byte[1024];
         if (port.read(readBytes) <= 0) {
             return "Could not read data";
@@ -61,7 +61,7 @@ public class UsbCommunication {
         return new String(readBytes);
     }
 
-    public String sendReceive(String str) {
+    public synchronized String sendReceive(String str) {
         if (send(str)) {
             return receive();
         }
@@ -79,5 +79,4 @@ public class UsbCommunication {
             port.setParameters(BAUDRATE, DATABITS, STOPBITS, PARITY);
         }
     }
-
 }
