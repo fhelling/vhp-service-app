@@ -1,6 +1,5 @@
-package com.inventum.vhp_service_app;
+package com.inventum.vhp_service_app.other;
 
-import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -16,24 +15,24 @@ public class UsbCommunication {
     private static final int STOPBITS = UsbPort.STOPBITS_1;
     private static final int PARITY = UsbPort.PARITY_NONE;
 
-    private final Context context;
     private final UsbDevice device;
+    private final UsbManager manager;
 
     private UsbDriver driver = null;
     private UsbDeviceConnection connection = null;
     private UsbPort port = null;
 
-    public UsbCommunication (Context context, UsbDevice device) {
-        this.context = context;
+    public UsbCommunication (UsbManager manager, UsbDevice device) {
+        this.manager = manager;
         this.device = device;
         setup();
     }
 
-    UsbDevice getDevice() {
+    public UsbDevice getDevice() {
         return device;
     }
 
-    UsbPort getPort() {
+    public UsbPort getPort() {
         return port;
     }
 
@@ -69,7 +68,6 @@ public class UsbCommunication {
     }
 
     private void setup() {
-        UsbManager manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         driver = new UsbDriver(device);
         connection = manager.openDevice(device);
 

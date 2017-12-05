@@ -1,4 +1,4 @@
-package com.inventum.vhp_service_app;
+package com.inventum.vhp_service_app.other;
 
 import android.hardware.usb.UsbDeviceConnection;
 
