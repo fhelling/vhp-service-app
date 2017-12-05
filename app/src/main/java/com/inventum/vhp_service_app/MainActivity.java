@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                 }
-            });
+            }).start();
         }
     };
 
@@ -99,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
         }
         textDeviceName.setText("");
         textInfo.setText("");
+        textResponse.setText("");
         buttonSend.setEnabled(false);
     }
 
