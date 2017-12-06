@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements
     private DrawerLayout drawer;
     private View navHeader;
     private ImageView imgLogo;
-    private TextView txtName, txtWebsite;
     private Toolbar toolbar;
 
     public static int navItemIndex = 0;
@@ -82,12 +81,10 @@ public class MainActivity extends AppCompatActivity implements
         navigationView = findViewById(R.id.nav_view);
 
         navHeader = navigationView.getHeaderView(0);
-        txtName = navHeader.findViewById(R.id.name);
-        txtWebsite = navHeader.findViewById(R.id.website);
         imgLogo = navHeader.findViewById(R.id.img_logo);
 
         // load nav menu header data
-        loadNavHeader();
+        imgLogo.setImageResource(R.drawable.inventum_logo);
 
         // initializing navigation menu
         setUpNavigationView();
@@ -148,13 +145,6 @@ public class MainActivity extends AppCompatActivity implements
     protected void onDestroy() {
         clearAll();
         super.onDestroy();
-    }
-
-    private void loadNavHeader() {
-        // name, website
-        txtName.setText("Inventum Technologies");
-        txtWebsite.setText("www.inventum.com");
-        imgLogo.setImageResource(R.drawable.inventum_logo);
     }
 
     private void loadHomeFragment() {

@@ -11,6 +11,8 @@ import android.widget.TextView;
 
 import com.inventum.vhp_service_app.R;
 
+import static com.inventum.vhp_service_app.activity.MainActivity.comm;
+
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
@@ -64,17 +66,30 @@ public class HomeFragment extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-        textStatus = getActivity().findViewById(R.id.textstatus);
-        textDeviceName = getActivity().findViewById(R.id.textdevicename);
-        textInfo = getActivity().findViewById(R.id.textinfo);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false);
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        textStatus = view.findViewById(R.id.textstatus);
+        textDeviceName = view.findViewById(R.id.textdevicename);
+        textInfo = view.findViewById(R.id.textinfo);
+        setDeviceInfo();
+        return view;
+    }
+
+    private void setDeviceInfo() {
+        if (comm != null) {
+            textStatus.setText("Device found");
+            String s = "DeviceID: " + comm.getDevice().getDeviceId() + "\n" +
+                    "DeviceName: " + comm.getDevice().getDeviceName() + "\n" +
+                    "VendorID: " + comm.getDevice().getVendorId() + "\n" +
+                    "ProductID: " + comm.getDevice().getProductId();
+            textDeviceName.setText(s);
+            textInfo.setText(comm.getPort().getManufacturer() + "\n" + comm.getPort().getProduct());
+        }
     }
 
     // TODO: Rename method, update argument and hook method into UI event
