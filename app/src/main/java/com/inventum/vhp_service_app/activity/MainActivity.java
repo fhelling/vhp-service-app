@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements
             navItemIndex = 0;
             CURRENT_TAG = TAG_HOME;
             loadHomeFragment();
-            //textStatus.setText("No device connected");
             getDevice();
         }
     }
@@ -193,16 +192,13 @@ public class MainActivity extends AppCompatActivity implements
         switch (navItemIndex) {
             case 0:
                 // home
-                HomeFragment homeFragment = new HomeFragment();
-                return homeFragment;
+                return new HomeFragment();
             case 1:
                 // terminal
-                TerminalFragment terminalFragment = new TerminalFragment();
-                return terminalFragment;
+                return new TerminalFragment();
             case 2:
                 // sensors
-                SensorsFragment sensorsFragment = new SensorsFragment();
-                return sensorsFragment;
+                return new SensorsFragment();
             default:
                 return new HomeFragment();
         }
@@ -278,7 +274,7 @@ public class MainActivity extends AppCompatActivity implements
         };
 
         //Setting the actionbarToggle to drawer layout
-        drawer.setDrawerListener(actionBarDrawerToggle);
+        drawer.addDrawerListener(actionBarDrawerToggle);
 
         //calling sync state is necessary or else your hamburger icon wont show up
         actionBarDrawerToggle.syncState();
@@ -339,8 +335,6 @@ public class MainActivity extends AppCompatActivity implements
             comm.stop();
             comm = null;
         }
-        //textDeviceName.setText("");
-        //textInfo.setText("");
     }
 
     private void getDevice() {
@@ -350,23 +344,10 @@ public class MainActivity extends AppCompatActivity implements
             for (UsbDevice device : deviceList.values()) {
                 if (checkDevice(device) && checkPermission(device)) {
                     comm = new UsbCommunication(manager, device);
-                    setDeviceInfo();
-                    break;
+                    return;
                 }
             }
         }
-    }
-
-    private void setDeviceInfo() {
-        if (comm == null) return;
-
-        //textStatus.setText("Device found");
-        String s = "DeviceID: " + comm.getDevice().getDeviceId() + "\n" +
-                "DeviceName: " + comm.getDevice().getDeviceName() + "\n" +
-                "VendorID: " + comm.getDevice().getVendorId() + "\n" +
-                "ProductID: " + comm.getDevice().getProductId();
-        //textDeviceName.setText(s);
-        //textInfo.setText(comm.getPort().getManufacturer() + "\n" + comm.getPort().getProduct());
     }
 
     private boolean checkDevice(UsbDevice device) {
@@ -391,14 +372,15 @@ public class MainActivity extends AppCompatActivity implements
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    HomeFragment homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(TAG_HOME);
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         if (comm == null) {
                             comm = new UsbCommunication(manager, device);
-                            setDeviceInfo();
+                            homeFragment.setDeviceDetached();
                         }
                     }
                     else {
-                        //textStatus.setText("Permission denied for device " + device);
+                        homeFragment.setDeviceDenied();
                         clearAll();
                     }
                 }
@@ -410,19 +392,19 @@ public class MainActivity extends AppCompatActivity implements
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-
+            HomeFragment homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(TAG_HOME);
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 // Correct device and permission granted?
                 if (checkDevice(device) && checkPermission(device)) {
                     comm = new UsbCommunication(manager, device);
-                    setDeviceInfo();
+                    homeFragment.setDeviceAttached();
                 }
 
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                 if (comm != null && device.equals(comm.getDevice())) {
-                    //textStatus.setText("Device detached");
+                    homeFragment.setDeviceDetached();
                     clearAll();
                 }
             }

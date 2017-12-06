@@ -7,8 +7,13 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.inventum.vhp_service_app.R;
+
+import static com.inventum.vhp_service_app.activity.MainActivity.comm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -29,6 +34,10 @@ public class TerminalFragment extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+
+    private EditText editCommand;
+    private Button buttonSend;
+    private TextView textResponse;
 
     public TerminalFragment() {
         // Required empty public constructor
@@ -65,8 +74,39 @@ public class TerminalFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_terminal, container, false);
+        View view = inflater.inflate(R.layout.fragment_terminal, container, false);
+        editCommand = view.findViewById(R.id.edit_command);
+        buttonSend = view.findViewById(R.id.button_send);
+        textResponse = view.findViewById(R.id.text_response);
+
+        buttonSend.setOnClickListener(buttonSendOnClickListener);
+        //buttonSend.setEnabled(false);
+        return view;
     }
+
+    View.OnClickListener buttonSendOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            if (comm == null) {
+                textResponse.setText(R.string.home_status_none);
+                return;
+            }
+            final String cmd = editCommand.getText().toString();
+            if (cmd.equals("")) return;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String resp = comm.sendReceive(cmd);
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            textResponse.setText(resp);
+                        }
+                    });
+                }
+            }).start();
+        }
+    };
 
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {

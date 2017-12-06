@@ -1,13 +1,27 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="com.inventum.vhp_service_app.fragment.TerminalFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <EditText
+        android:id="@+id/edit_command"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_terminal_fragment" />
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:text="@string/terminal_command_default"
+        android:textStyle="bold" />
 
-</FrameLayout>
+    <Button
+        android:id="@+id/button_send"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/terminal_button_send" />
+
+    <TextView
+        android:id="@+id/text_response"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

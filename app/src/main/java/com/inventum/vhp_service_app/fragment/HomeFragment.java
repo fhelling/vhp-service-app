@@ -33,9 +33,9 @@ public class HomeFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    TextView textDeviceName;
-    TextView textStatus;
-    TextView textInfo;
+    private TextView textDeviceName;
+    private TextView textStatus;
+    private TextView textInfo;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -73,23 +73,46 @@ public class HomeFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-        textStatus = view.findViewById(R.id.textstatus);
-        textDeviceName = view.findViewById(R.id.textdevicename);
-        textInfo = view.findViewById(R.id.textinfo);
-        setDeviceInfo();
+        textStatus = view.findViewById(R.id.text_status);
+        textDeviceName = view.findViewById(R.id.text_device_name);
+        textInfo = view.findViewById(R.id.text_info);
+        setDeviceAttached();
         return view;
     }
 
-    private void setDeviceInfo() {
+    public void setDeviceNone() {
+        textStatus.setText(R.string.home_status_none);
+        textDeviceName.setText("");
+        textInfo.setText("");
+    }
+
+    public void setDeviceAttached() {
         if (comm != null) {
-            textStatus.setText("Device found");
-            String s = "DeviceID: " + comm.getDevice().getDeviceId() + "\n" +
+            textStatus.setText(R.string.home_status_attached);
+            String name = "DeviceID: " + comm.getDevice().getDeviceId() + "\n" +
                     "DeviceName: " + comm.getDevice().getDeviceName() + "\n" +
                     "VendorID: " + comm.getDevice().getVendorId() + "\n" +
                     "ProductID: " + comm.getDevice().getProductId();
-            textDeviceName.setText(s);
-            textInfo.setText(comm.getPort().getManufacturer() + "\n" + comm.getPort().getProduct());
+            textDeviceName.setText(name);
+            String info = comm.getPort().getManufacturer() + "\n" +
+                    comm.getPort().getProduct();
+            textInfo.setText(info);
         }
+        else {
+            setDeviceNone();
+        }
+    }
+
+    public void setDeviceDetached() {
+        textStatus.setText(R.string.home_status_detached);
+        textDeviceName.setText("");
+        textInfo.setText("");
+    }
+
+    public void setDeviceDenied() {
+        textStatus.setText(R.string.home_status_denied);
+        textDeviceName.setText("");
+        textInfo.setText("");
     }
 
     // TODO: Rename method, update argument and hook method into UI event

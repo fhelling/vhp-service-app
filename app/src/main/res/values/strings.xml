@@ -22,6 +22,14 @@
     <string name="activity_title_about_us">About Us</string>
     <string name="action_logout">Logout</string>
 
+    <string name="home_status_none">No device connected</string>
+    <string name="home_status_attached">Device found</string>
+    <string name="home_status_detached">Device detached</string>
+    <string name="home_status_denied">Permission denied</string>
+
+    <string name="terminal_command_default">^json device</string>
+    <string name="terminal_button_send">Send</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_home_fragment">Hello home fragment</string>
     <string name="hello_terminal_fragment">Hello terminal fragment</string>
