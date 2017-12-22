@@ -30,6 +30,13 @@
     <string name="terminal_command_default">^json device</string>
     <string name="terminal_button_send">Send</string>
 
+    <string name="sensors_airin">Air in: </string>
+    <string name="sensors_airout">Air out: </string>
+    <string name="sensors_chreturn">CH return: </string>
+    <string name="sensors_chsupply">CH supply: </string>
+    <string name="sensors_hotgas">Hotgas: </string>
+    <string name="sensors_evap">Evap: </string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_home_fragment">Hello home fragment</string>
     <string name="hello_terminal_fragment">Hello terminal fragment</string>

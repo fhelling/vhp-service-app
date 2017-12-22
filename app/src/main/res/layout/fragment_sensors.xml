@@ -1,13 +1,44 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.inventum.vhp_service_app.fragment.SensorsFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_sensors_fragment" />
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_airin"/>
 
-</FrameLayout>
+        <TextView android:id="@+id/text_airin" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_airout"/>
+
+        <TextView android:id="@+id/text_airout" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_chreturn"/>
+
+        <TextView android:id="@+id/text_chreturn" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_chsupply"/>
+
+        <TextView android:id="@+id/text_chsupply" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_hotgas"/>
+
+        <TextView android:id="@+id/text_hotgas" />
+    </TableRow>
+    <TableRow>
+        <TextView
+            android:text="@string/sensors_evap"/>
+
+        <TextView android:id="@+id/text_evap" />
+    </TableRow>
+
+</TableLayout>

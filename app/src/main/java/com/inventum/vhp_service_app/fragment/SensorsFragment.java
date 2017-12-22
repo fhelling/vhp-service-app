@@ -7,8 +7,14 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.inventum.vhp_service_app.R;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import static com.inventum.vhp_service_app.activity.MainActivity.comm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -27,6 +33,15 @@ public class SensorsFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+
+    private TextView textAirin;
+    private TextView textAirout;
+    private TextView textChreturn;
+    private TextView textChsupply;
+    private TextView textHotgas;
+    private TextView textEvap;
+
+    private boolean running = false;
 
     private OnFragmentInteractionListener mListener;
 
@@ -65,7 +80,61 @@ public class SensorsFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_sensors, container, false);
+        View view = inflater.inflate(R.layout.fragment_sensors, container, false);
+        textAirin = view.findViewById(R.id.text_airin);
+        textAirout = view.findViewById(R.id.text_airout);
+        textChreturn = view.findViewById(R.id.text_chreturn);
+        textChsupply = view.findViewById(R.id.text_chsupply);
+        textHotgas = view.findViewById(R.id.text_hotgas);
+        textEvap = view.findViewById(R.id.text_evap);
+        running = true;
+        if (comm != null) {
+            getData();
+        }
+        return view;
+    }
+
+    private void getData() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (running) {
+                    String resp = comm.sendReceive("^json device");
+                    resp = resp.replace("^", "");
+                    try {
+                        JSONObject jObject = new JSONObject(resp);
+                        final String airin = jObject.getString("AirIn");
+                        final String airout = jObject.getString("AirOut");
+                        final String chreturn = jObject.getString("ChReturn");
+                        final String chsupply = jObject.getString("ChSupply");
+                        final String hotgas = jObject.getString("Hotgas");
+                        final String evap = jObject.getString("Evap");
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                textAirin.setText(airin);
+                                textAirout.setText(airout);
+                                textChreturn.setText(chreturn);
+                                textChsupply.setText(chsupply);
+                                textHotgas.setText(hotgas);
+                                textEvap.setText(evap);
+                            }
+                        });
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void stop() {
+        running = false;
     }
 
     // TODO: Rename method, update argument and hook method into UI event

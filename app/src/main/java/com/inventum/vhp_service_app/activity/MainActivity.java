@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.Sensor;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.net.Uri;
@@ -35,6 +36,7 @@ import com.inventum.vhp_service_app.fragment.TerminalFragment;
 import com.inventum.vhp_service_app.other.UsbCommunication;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements
         HomeFragment.OnFragmentInteractionListener,
@@ -89,17 +91,7 @@ public class MainActivity extends AppCompatActivity implements
         // initializing navigation menu
         setUpNavigationView();
 
-
-
         activityTitles = getResources().getStringArray(R.array.nav_item_activity_titles);
-
-//        textResponse = findViewById(R.id.textresponse);
-//
-//        editCommand = findViewById(R.id.editcommand);
-//
-//        buttonSend = findViewById(R.id.buttonsend);
-//        buttonSend.setOnClickListener(buttonSendOnClickListener);
-//        buttonSend.setEnabled(false);
 
         //register the broadcast receiver
         manager = (UsbManager) getSystemService(Context.USB_SERVICE);
@@ -115,30 +107,6 @@ public class MainActivity extends AppCompatActivity implements
             getDevice();
         }
     }
-
-//    OnClickListener buttonSendOnClickListener = new OnClickListener() {
-//        @Override
-//        public void onClick(View view) {
-//            if (comm == null) {
-//                textResponse.setText("No device connected");
-//                return;
-//            }
-//            final String cmd = editCommand.getText().toString();
-//            if (cmd.equals("")) return;
-//            new Thread(new Runnable() {
-//                @Override
-//                public void run() {
-//                    final String resp = comm.sendReceive(cmd);
-//                    runOnUiThread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            textResponse.setText(resp);
-//                        }
-//                    });
-//                }
-//            }).start();
-//        }
-//    };
 
     @Override
     protected void onDestroy() {
@@ -181,6 +149,12 @@ public class MainActivity extends AppCompatActivity implements
             mHandler.post(mPendingRunnable);
         }
 
+        if (!CURRENT_TAG.equals(TAG_SENSORS)) {
+            SensorsFragment fragment = (SensorsFragment) getSupportFragmentManager().findFragmentByTag(TAG_SENSORS);
+            if (fragment != null) {
+                fragment.stop();
+            }
+        }
         //Closing drawer on item click
         drawer.closeDrawers();
 
@@ -398,13 +372,18 @@ public class MainActivity extends AppCompatActivity implements
                 // Correct device and permission granted?
                 if (checkDevice(device) && checkPermission(device)) {
                     comm = new UsbCommunication(manager, device);
-                    homeFragment.setDeviceAttached();
+                    if (CURRENT_TAG.equals(TAG_HOME)) {
+                        homeFragment.setDeviceAttached();
+                    }
                 }
 
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
-                UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                if (comm != null && device.equals(comm.getDevice())) {
-                    homeFragment.setDeviceDetached();
+                //UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                //if (comm != null && device.equals(comm.getDevice())) {
+                if (comm != null) {
+                    if (CURRENT_TAG.equals(TAG_HOME)) {
+                        homeFragment.setDeviceDetached();
+                    }
                     clearAll();
                 }
             }

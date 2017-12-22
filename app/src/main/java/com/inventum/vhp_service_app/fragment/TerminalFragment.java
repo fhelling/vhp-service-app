@@ -80,7 +80,6 @@ public class TerminalFragment extends Fragment {
         textResponse = view.findViewById(R.id.text_response);
 
         buttonSend.setOnClickListener(buttonSendOnClickListener);
-        //buttonSend.setEnabled(false);
         return view;
     }
 
